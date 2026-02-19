@@ -48,7 +48,8 @@ LIMIT 25;
 
 --- REWRITING
 
-SELECT skills_dim.skill_id,skills_dim.skills,  count(skills_job_dim.job_id) as demand_count,ROUND(avg(salary_year_avg),0) as avg_salary
+SELECT skills_dim.skill_id,skills_dim.skills,  count(skills_job_dim.job_id) as demand_count,
+        ROUND(avg(salary_year_avg),0) as avg_salary
 from job_postings_fact
     INNER JOIN skills_job_dim on JOB_Postings_fact.job_id=skills_job_dim.job_id
     INNER JOIN skills_dim on skills_job_dim.skill_id=skills_dim.skill_id
