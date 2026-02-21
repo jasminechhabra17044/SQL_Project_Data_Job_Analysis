@@ -55,7 +55,7 @@ LIMIT 10;
 
 ```
 
-![top_paying_roles](SQL_Project_Data_Job_Analysis\assets\output.png)
+![top_paying_roles](/SQL_Project_Data_Job_Analysis/assets/output.png)
 
 *The chart shows that aside from one extreme outlier ($650K), top-paying data analyst roles cluster tightly between roughly $180K and $230K, mostly at senior and principal levels, generated using ChatGPT*
 
