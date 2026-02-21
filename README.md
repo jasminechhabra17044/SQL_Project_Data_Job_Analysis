@@ -33,27 +33,25 @@ To identify the highest-paying roles, I filtered data analyst positions by avera
 
 ```sql
 SELECT
-	job_id,
-	job_title,
-	job_location,
-	job_schedule_type,
-	salary_year_avg,
-	job_posted_date,
-    name as company_name
-
+    job_id,
+    job_title,
+    job_location,
+    job_schedule_type,
+    salary_year_avg,
+    job_posted_date,
+    name AS company_name
 FROM
     job_postings_fact
 LEFT JOIN
     company_dim
-ON
-    job_postings_fact.company_id=company_dim.company_id
+    ON job_postings_fact.company_id = company_dim.company_id
 WHERE
-	job_title like '%Data Analyst%'
-	AND job_location = 'Anywhere'
+    job_title LIKE '%Data Analyst%'
+    AND job_location = 'Anywhere'
     AND salary_year_avg IS NOT NULL
 ORDER BY
-	salary_year_avg DESC 
-LIMIT 10
+    salary_year_avg DESC
+LIMIT 10;
 
 ```
 
@@ -67,33 +65,38 @@ To understand what skills are required for the top-paying jobs, I joined the job
 
 ```SQL
 WITH top_paying_jobs AS (
-
-SELECT
-	job_id,
-	job_title,
-	salary_year_avg,
-    name as company_name
-
-FROM
-    job_postings_fact
-LEFT JOIN
-    company_dim
-ON
-    job_postings_fact.company_id=company_dim.company_id
-WHERE
-	job_title like '%Data Analyst%'
-	AND job_location = 'Anywhere'
-    AND salary_year_avg IS NOT NULL
-ORDER BY
-	salary_year_avg DESC 
-LIMIT 10
-
+    SELECT
+        job_id,
+        job_title,
+        salary_year_avg,
+        name AS company_name
+    FROM
+        job_postings_fact
+    LEFT JOIN
+        company_dim
+        ON job_postings_fact.company_id = company_dim.company_id
+    WHERE
+        job_title LIKE '%Data Analyst%'
+        AND job_location = 'Anywhere'
+        AND salary_year_avg IS NOT NULL
+    ORDER BY
+        salary_year_avg DESC
+    LIMIT 10
 )
 
-SELECT top_paying_jobs.*,skills_dim.skills FROM top_paying_jobs
-INNER JOIN skills_job_dim on top_paying_jobs.job_id=skills_job_dim.job_id
-INNER JOIN skills_dim on skills_job_dim.skill_id=skills_dim.skill_id
-ORDER BY salary_year_avg desc
+SELECT
+    top_paying_jobs.*,
+    skills_dim.skills
+FROM
+    top_paying_jobs
+INNER JOIN
+    skills_job_dim
+    ON top_paying_jobs.job_id = skills_job_dim.job_id
+INNER JOIN
+    skills_dim
+    ON skills_job_dim.skill_id = skills_dim.skill_id
+ORDER BY
+    salary_year_avg DESC;
 ```
 
 - PySpark dominates — big data processing skills command the highest salaries.
@@ -127,18 +130,26 @@ ORDER BY salary_year_avg desc
 This query helped identify the skills most frequently requested in job postings, directing focus to areas with high demand.
 
 ```sql
-
-SELECT skills, count(skills_job_dim.job_id) as demand_count
- FROM job_postings_fact
-INNER JOIN skills_job_dim on JOB_Postings_fact.job_id=skills_job_dim.job_id
-INNER JOIN skills_dim on skills_job_dim.skill_id=skills_dim.skill_id
+SELECT
+    sd.skills,
+    COUNT(sjd.job_id) AS demand_count
+FROM
+    job_postings_fact AS jf
+INNER JOIN
+    skills_job_dim AS sjd
+    ON jf.job_id = sjd.job_id
+INNER JOIN
+    skills_dim AS sd
+    ON sjd.skill_id = sd.skill_id
 WHERE
-  -- Filters job titles for 'Data Analyst' roles
-  job_postings_fact.job_title_short = 'Data Analyst'
-  AND job_work_from_home = TRUE
-group by skills
-order by demand_count desc
-limit 5
+    -- Filter for Data Analyst roles
+    jf.job_title_short = 'Data Analyst'
+    AND jf.job_work_from_home = TRUE
+GROUP BY
+    sd.skills
+ORDER BY
+    demand_count DESC
+LIMIT 5;
 ```
 | Skill     | Demand Count |
 |-----------|--------------|
@@ -163,19 +174,27 @@ limit 5
 Exploring the average salaries associated with different skills revealed which skills are the highest paying.
 
 ```sql
-SELECT skills,ROUND(avg(salary_year_avg),0) as avg_salary
-
- FROM job_postings_fact
-INNER JOIN skills_job_dim on JOB_Postings_fact.job_id=skills_job_dim.job_id
-INNER JOIN skills_dim on skills_job_dim.skill_id=skills_dim.skill_id
+SELECT
+    sd.skills,
+    ROUND(AVG(jf.salary_year_avg), 0) AS avg_salary
+FROM
+    job_postings_fact AS jf
+INNER JOIN
+    skills_job_dim AS sjd
+    ON jf.job_id = sjd.job_id
+INNER JOIN
+    skills_dim AS sd
+    ON sjd.skill_id = sd.skill_id
 WHERE
-  -- Filters job titles for 'Data Analyst' roles
-  job_postings_fact.job_title_short = 'Data Analyst'
- AND job_work_from_home = TRUE
- AND salary_year_avg is NOT NULL
-group by skills
-order by avg_salary desc
-limit 25 
+    -- Filter for Data Analyst roles
+    jf.job_title_short = 'Data Analyst'
+    AND jf.job_work_from_home = TRUE
+    AND jf.salary_year_avg IS NOT NULL
+GROUP BY
+    sd.skills
+ORDER BY
+    avg_salary DESC
+LIMIT 25;
 ```
 
 | Skill           | Avg Salary (USD) |
@@ -223,17 +242,31 @@ limit 25
 Combining insights from demand and salary data, this query aimed to pinpoint skills that are both in high demand and have high salaries, offering a strategic focus for skill development.
 
 ```sql
-SELECT skills_dim.skill_id,skills_dim.skills,  count(skills_job_dim.job_id) as demand_count,
-        ROUND(avg(salary_year_avg),0) as avg_salary
-from job_postings_fact
-    INNER JOIN skills_job_dim on JOB_Postings_fact.job_id=skills_job_dim.job_id
-    INNER JOIN skills_dim on skills_job_dim.skill_id=skills_dim.skill_id
-WHERE  job_postings_fact.job_title_short = 'Data Analyst'
-    AND job_work_from_home = TRUE
-    AND salary_year_avg is NOT NULL
-    group by skills_dim.skill_id
-    HAVING count(skills_job_dim.job_id)>10
-ORDER BY demand_count DESC , avg_salary DESC
+SELECT
+    sd.skill_id,
+    sd.skills,
+    COUNT(sjd.job_id) AS demand_count,
+    ROUND(AVG(jf.salary_year_avg), 0) AS avg_salary
+FROM
+    job_postings_fact AS jf
+INNER JOIN
+    skills_job_dim AS sjd
+    ON jf.job_id = sjd.job_id
+INNER JOIN
+    skills_dim AS sd
+    ON sjd.skill_id = sd.skill_id
+WHERE
+    jf.job_title_short = 'Data Analyst'
+    AND jf.job_work_from_home = TRUE
+    AND jf.salary_year_avg IS NOT NULL
+GROUP BY
+    sd.skill_id,
+    sd.skills
+HAVING
+    COUNT(sjd.job_id) > 10
+ORDER BY
+    demand_count DESC,
+    avg_salary DESC;
 ```
 | Skill        | Demand Count | Avg Salary (USD) |
 |-------------|-------------|------------------|
